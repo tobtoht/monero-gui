@@ -367,7 +367,7 @@ Rectangle {
 
               LineEditMulti {
                   id: descriptionLine
-                  placeholderText: qsTr("Saved to local wallet history") + translationManager.emptyString
+                  placeholderText: qsTr("Only seen by you (optional)") + translationManager.emptyString
                   Layout.fillWidth: true
                   visible: descriptionCheckbox.checked
               }
