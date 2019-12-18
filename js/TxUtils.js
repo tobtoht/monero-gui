@@ -40,6 +40,13 @@ function check256(str, length) {
     return true;
 }
 
+function getUnlockedBalance() {
+    if(!currentWallet){
+        return 0
+    }
+    return currentWallet.unlockedBalance()
+}
+
 function checkAddress(address, testnet) {
   return walletManager.addressValid(address, testnet)
 }

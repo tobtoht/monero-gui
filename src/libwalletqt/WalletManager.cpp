@@ -260,7 +260,7 @@ quint64 WalletManager::maximumAllowedAmount() const
     return Monero::Wallet::maximumAllowedAmount();
 }
 
-QString WalletManager::maximumAllowedAmountAsSting() const
+QString WalletManager::maximumAllowedAmountAsString() const
 {
     return WalletManager::displayAmount(WalletManager::maximumAllowedAmount());
 }
@@ -268,6 +268,12 @@ QString WalletManager::maximumAllowedAmountAsSting() const
 QString WalletManager::displayAmount(quint64 amount) const
 {
     return QString::fromStdString(Monero::Wallet::displayAmount(amount));
+}
+
+QString WalletManager::displayAmountTruncated(quint64 amount) const
+{
+    QRegularExpression r("0{1,10}$");
+    return QString::fromStdString(Monero::Wallet::displayAmount(amount)).replace(r, "");
 }
 
 quint64 WalletManager::amountFromString(const QString &amount) const
