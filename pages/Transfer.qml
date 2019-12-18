@@ -54,9 +54,6 @@ Rectangle {
     property string sendButtonWarning: ""
     property string startLinkText: qsTr("<style type='text/css'>a {text-decoration: none; color: #FF6C3C; font-size: 14px;}</style><font size='2'> (</font><a href='#'>Start daemon</a><font size='2'>)</font>") + translationManager.emptyString
     property bool showAdvanced: false
-    // @TODO: remove after pid removal hardfork
-    property bool warningLongPidTransfer: false
-    property bool warningLongPidDescription: descriptionLine.text.match(/^[0-9a-f]{64}$/i)
 
     Clipboard { id: clipboard }
 
@@ -71,7 +68,6 @@ Rectangle {
     function updateFromQrCode(address, payment_id, amount, tx_description, recipient_name) {
         console.log("updateFromQrCode")
         addressLine.text = address
-        setPaymentId(payment_id);
         amountLine.text = amount
         setDescription(recipient_name + " " + tx_description);
         cameraUi.qrcode_decoded.disconnect(updateFromQrCode)
@@ -82,25 +78,8 @@ Rectangle {
         descriptionCheckbox.checked = descriptionLine.text != "";
     }
 
-    function setPaymentId(value) {
-        paymentIdLine.text = value;
-        paymentIdCheckbox.checked = paymentIdLine.text != "";
-    }
-
-    function isLongPidService(text) {
-        // @TODO: remove after pid removal hardfork
-        return text.length == 95 &&
-               [ "44tLjmXrQNrWJ5NBsEj2R77ZBEgDa3fEe9GLpSf2FRmhexPvfYDUAB7EXX1Hdb3aMQ9FLqdJ56yaAhiXoRsceGJCRS3Jxkn", // Binance
-                 "4AQ3ZREb53FMYKBmpPn7BD7hphPk6G1ceinQX6gefAvhFJsNbeFsGwebZWCNxoJAbZhD9cjetBAqmLhfXmcNLBpPMsBL6yM", // KuCoin
-                 "47YzEcMrU2S42UitURo7ukUDaSaL485Z1QbmFgq1vSs5g3JesL4rChwWf2uWk1va99JAaRxt65jhX9uAqQnjeFM44ckgZtp", // AnycoinDirect
-                 "4BCeEPhodgPMbPWFN1dPwhWXdRX8q4mhhdZdA1dtSMLTLCEYvAj9QXjXAfF7CugEbmfBhgkqHbdgK9b2wKA6nqRZQCgvCDm", // Bitfinex
-                 "463tWEBn5XZJSxLU6uLQnQ2iY9xuNcDbjLSjkn3XAXHCbLrTTErJrBWYgHJQyrCwkNgYvyV3z8zctJLPCZy24jvb3NiTcTJ"  // Bittrex
-               ].indexOf(text) > -1
-    }
-
     function clearFields() {
         addressLine.text = ""
-        setPaymentId("");
         amountLine.text = ""
         root.sendButtonWarning = ""
         setDescription("");
@@ -274,11 +253,9 @@ Rectangle {
                   const parsed = walletManager.parse_uri_to_object(text);
                   if (!parsed.error) {
                     addressLine.text = parsed.address;
-                    setPaymentId(parsed.payment_id);
                     amountLine.text = parsed.amount;
                     setDescription(parsed.tx_description);
                   }
-                  warningLongPidTransfer = isLongPidService(text);
               }
               inlineButton.text: FontAwesome.qrcode
               inlineButton.fontPixelSize: 22
@@ -339,12 +316,6 @@ Rectangle {
           }
       }
 
-      MoneroComponents.WarningBox {
-          text: qsTr("Description field contents match long payment ID format. \
-          Please don't paste long payment ID into description field, your funds might be lost.") + translationManager.emptyString;
-          visible: warningLongPidDescription
-      }
-
       ColumnLayout {
           spacing: 15
 
@@ -373,48 +344,6 @@ Rectangle {
                   visible: descriptionCheckbox.checked
               }
           }
-
-          ColumnLayout {
-              visible: paymentIdCheckbox.checked
-              // @TODO: remove after pid removal hardfork
-              CheckBox {
-                  id: paymentIdCheckbox
-                  border: false
-                    checkedIcon: FontAwesome.minusCircle
-                    uncheckedIcon: FontAwesome.plusCircle
-                    fontAwesomeIcons: true
-                  fontSize: paymentIdLine.labelFontSize
-                  iconOnTheLeft: true
-                  Layout.fillWidth: true
-                  text: qsTr("Add payment ID") + translationManager.emptyString
-                  onClicked: {
-                      if (!paymentIdCheckbox.checked) {
-                        paymentIdLine.text = "";
-                      }
-                  }
-              }
-
-              // payment id input
-              LineEditMulti {
-                  id: paymentIdLine
-                  fontBold: true
-                  placeholderText: qsTr("64 hexadecimal characters") + translationManager.emptyString
-                  readOnly: true
-                  Layout.fillWidth: true
-                  wrapMode: Text.WrapAnywhere
-                  addressValidation: false
-                  visible: paymentIdCheckbox.checked
-              }
-          }
-      }
-
-      MoneroComponents.WarningBox {
-          // @TODO: remove after pid removal hardfork
-          id: paymentIdWarningBox
-          text: qsTr("Long payment IDs are obsolete. \
-          Long payment IDs were not encrypted on the blockchain and would harm your privacy. \
-          If the party you're sending to still requires a long payment ID, please notify them.") + translationManager.emptyString;
-          visible: warningLongPidTransfer || paymentIdCheckbox.checked
       }
 
       MoneroComponents.WarningBox {
@@ -439,8 +368,7 @@ Rectangle {
                   console.log("priority: " + priority)
                   console.log("amount: " + amountLine.text)
                   addressLine.text = addressLine.text.trim()
-                  setPaymentId(paymentIdLine.text.trim());
-                  root.paymentClicked(addressLine.text, paymentIdLine.text, amountLine.text, root.mixin, priority, descriptionLine.text)
+                  root.paymentClicked(addressLine.text, "", amountLine.text, root.mixin, priority, descriptionLine.text)
               }
           }
       }
@@ -500,8 +428,7 @@ Rectangle {
                     console.log("priority: " + priority)
                     console.log("amount: " + amountLine.text)
                     addressLine.text = addressLine.text.trim()
-                    setPaymentId(paymentIdLine.text.trim());
-                    root.paymentClicked(addressLine.text, paymentIdLine.text, amountLine.text, root.mixin, priority, descriptionLine.text)
+                    root.paymentClicked(addressLine.text, "", amountLine.text, root.mixin, priority, descriptionLine.text)
 
                 }
             }
@@ -581,7 +508,6 @@ Rectangle {
                 for (var i = 0; i < transaction.txCount; ++i) {
                     confirmationDialog.text += qsTr("\nTransaction #%1").arg(i+1)
                     +qsTr("\nRecipient: ") + transaction.recipientAddress[i]
-                    + (transaction.paymentId[i] == "" ? "" : qsTr("\n\payment ID: ") + transaction.paymentId[i])
                     + qsTr("\nAmount: ") + walletManager.displayAmount(transaction.amount(i))
                     + qsTr("\nFee: ") + walletManager.displayAmount(transaction.fee(i))
                     + qsTr("\nRingsize: ") + (transaction.mixin(i)+1)
@@ -737,9 +663,6 @@ Rectangle {
         if(typeof address !== 'undefined')
             addressLine.text = address
 
-        if(typeof paymentId !== 'undefined')
-            setPaymentId(paymentId);
-
         if(typeof description !== 'undefined')
             setDescription(description);
 
@@ -782,10 +705,6 @@ Rectangle {
         // Amount is nonzero
         if (!amountLine.text || parseFloat(amountLine.text) <= 0) {
             root.sendButtonWarning = qsTr("Enter an amount.") + translationManager.emptyString;
-            return false;
-        }
-
-        if (paymentIdWarningBox.visible) {
             return false;
         }
 
